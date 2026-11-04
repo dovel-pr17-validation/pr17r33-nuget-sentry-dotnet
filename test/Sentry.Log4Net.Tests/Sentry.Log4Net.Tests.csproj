@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTfm)</TargetFrameworks>
+    <!-- These tests fail on Mono -->
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(TargetFrameworks);net48</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="log4net" Version="2.0.15" />
+    <ProjectReference Include="..\..\src\Sentry.Log4Net\Sentry.Log4Net.csproj" />
+    <ProjectReference Include="..\Sentry.Testing\Sentry.Testing.csproj" />
+
+    <Using Include="log4net" />
+    <Using Include="log4net.Core" />
+    <Using Include="log4net.Appender" />
+    <Using Include="log4net.Layout" />
+    <Using Include="log4net.Repository.Hierarchy" />
+    <Using Include="Sentry.Log4Net" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="SentryAppenderTests.Structured.cs">
+      <DependentUpon>SentryAppenderTests.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+</Project>

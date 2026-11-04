@@ -1,0 +1,77 @@
+name: format code
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - 'samples/**'
+      - '.github/workflows/format-code.yml'
+
+jobs:
+  format-code:
+    name: Format Code
+    # Serialize with the commit job in verify-api.yml so the two auto-commit jobs can't race each
+    # other's git push on the same PR branch.
+    concurrency:
+      group: pr-auto-commit-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    # Run on 'macos' because Linux is missing the `ios` workload: https://github.com/dotnet/runtime/issues/85505
+    # Pin macos to get the version of XCode that we need: https://github.com/actions/runner-images/issues/10703
+    runs-on: xcode-27
+    steps:
+      # PR head, not the merge ref: the submodule working trees must match the branch we commit to
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions/environment
+        with:
+          projects: Sentry.slnx
+
+      - name: Restore .NET Dependencies
+        run: dotnet restore Sentry.slnx --nologo
+
+      - name: Format Code
+        # We exclude `./**/*OptionsSetup.cs` from the format because the tool struggles with
+        # source generators.
+        #
+        # We exclude `test/Sentry.Tests/AttributeReaderTests.cs` because dotnet-format tries to
+        # delete assertions in there.
+        # - see https://github.com/getsentry/sentry-dotnet/pull/4911#discussion_r2795717887
+        run: dotnet format Sentry.slnx --no-restore --report ./dotnet-format-report --exclude ./modules ./**/*OptionsSetup.cs ./test/Sentry.Tests/AttributeReaderTests.cs
+
+      - name: Upload Format Report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: false
+          path: ./dotnet-format-report/
+          if-no-files-found: ignore
+
+      - name: Exclude Format Report from Git
+        run: |
+          if [ -d ./dotnet-format-report ]; then
+            echo '*' > ./dotnet-format-report/.gitignore
+          fi
+
+      # actions/checkout fetches only a single commit in a detached HEAD state. Therefore
+      # we need to pass the current branch, otherwise we can't commit the changes.
+      # GITHUB_HEAD_REF is the name of the head branch. GitHub Actions only sets this for PRs.
+      #
+      # For fork PRs we can't push back to the contributor's branch, so we fail the check
+      # instead — prompting the contributor to run dotnet format locally.
+      - name: Commit Formatted Code
+        run: |
+          if [[ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
+            if [[ $(git status) != *"nothing to commit"* ]]; then
+              echo "::error::Formatting issues found. Please run the following command locally and push the result:"
+              echo "::error::  dotnet format Sentry.slnx --no-restore --exclude ./modules ./**/*OptionsSetup.cs ./test/Sentry.Tests/AttributeReaderTests.cs"
+              exit 1
+            fi
+            echo "All code formatted correctly."
+          else
+            ./scripts/commit-formatted-code.sh $GITHUB_HEAD_REF
+          fi

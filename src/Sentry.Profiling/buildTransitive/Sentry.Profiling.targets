@@ -1,0 +1,14 @@
+<Project>
+  <ItemGroup Condition="$(Language) == 'C#' and $(SentryImplicitUsings) != 'false' and ($(ImplicitUsings) == 'enable' or $(ImplicitUsings) == 'true')">
+    <Using Include="Sentry.Profiling" />
+  </ItemGroup>
+
+  <Target BeforeTargets="BeforeBuild" Name="CheckPlatformSupport">
+    <Error Text="Package Sentry.Profiling is not supported on platform '$(TargetPlatformIdentifier)'."
+           Condition="'$(TargetPlatformIdentifier)' == 'android'" />
+    <Error Text="Package Sentry.Profiling is not supported on platform '$(TargetPlatformIdentifier)'. The profiler is already part of the main Sentry package."
+           Condition="'$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst'" />
+    <Error Text="Package Sentry.Profiling is not supported with Blazor WebAssembly. Please remove Sentry.Profiling from your project."
+           Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true'" />
+  </Target>
+</Project>

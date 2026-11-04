@@ -1,0 +1,221 @@
+using Sentry.Extensibility;
+using Sentry.Internal;
+using Sentry.Internal.Extensions;
+
+namespace Sentry;
+
+internal enum SentryMonitorScheduleType
+{
+    None,
+    Crontab,
+    Interval
+}
+
+/// <summary>
+/// Sentry's intervals for monitors
+/// </summary>
+public enum SentryMonitorInterval
+{
+    /// <summary>
+    /// Year
+    /// </summary>
+    Year,
+
+    /// <summary>
+    /// Month
+    /// </summary>
+    Month,
+
+    /// <summary>
+    /// Week
+    /// </summary>
+    Week,
+
+    /// <summary>
+    /// Day
+    /// </summary>
+    Day,
+
+    /// <summary>
+    /// Hour
+    /// </summary>
+    Hour,
+
+    /// <summary>
+    /// Minute
+    /// </summary>
+    Minute
+}
+
+/// <summary>
+/// Sentry's options for monitors
+/// </summary>
+public class SentryMonitorOptions : ISentryJsonSerializable
+{
+    private SentryMonitorScheduleType _type = SentryMonitorScheduleType.None;
+    private string? _crontab;
+    private int? _interval;
+    private SentryMonitorInterval? _unit;
+
+    internal bool HasSchedule => _type is not SentryMonitorScheduleType.None;
+
+    /// <summary>
+    /// Set Interval
+    /// </summary>
+    /// <param name="crontab"></param>
+    public void Interval(string crontab)
+    {
+        if (_type is not SentryMonitorScheduleType.None)
+        {
+            throw new ArgumentException("You tried to set the interval twice. The Check-Ins interval is supposed to be set only once.");
+        }
+
+        if (!CrontabValidator.IsValid(crontab))
+        {
+            throw new ArgumentException("The provided crontab does not match the expected format of '* * * * *' " +
+                                        "translating to 'minute', 'hour', 'day of the month', 'month', and 'day of the week'.");
+        }
+
+        _type = SentryMonitorScheduleType.Crontab;
+        _crontab = crontab;
+    }
+
+    /// <summary>
+    /// Set Interval
+    /// </summary>
+    /// <param name="interval"></param>
+    /// <param name="unit"></param>
+    public void Interval(int interval, SentryMonitorInterval unit)
+    {
+        if (_type is not SentryMonitorScheduleType.None)
+        {
+            throw new ArgumentException("You tried to set the interval twice. The Check-Ins interval is supposed to be set only once.");
+        }
+
+        _type = SentryMonitorScheduleType.Interval;
+        _interval = interval;
+        _unit = unit;
+    }
+
+    /// <summary>
+    /// The allowed margin of minutes after the expected check-in time that the monitor will not be considered missed for.
+    /// </summary>
+    public TimeSpan? CheckInMargin { get; set; }
+
+    /// <summary>
+    /// The allowed duration in minutes that the monitor may be in_progress for before being considered failed due to timeout.
+    /// </summary>
+    public TimeSpan? MaxRuntime { get; set; }
+
+    private int? _failureIssueThreshold;
+
+    /// <summary>
+    /// The number of consecutive failed check-ins it takes before an issue is created.
+    /// </summary>
+    public int? FailureIssueThreshold
+    {
+        get => _failureIssueThreshold;
+        set
+        {
+            if (value <= 0)
+            {
+                throw new ArgumentException("FailureIssueThreshold has to be set to a number greater than 0.");
+            }
+            _failureIssueThreshold = value;
+        }
+    }
+
+    private int? _recoveryThreshold;
+
+    /// <summary>
+    /// The number of consecutive OK check-ins it takes before an issue is resolved.
+    /// </summary>
+    public int? RecoveryThreshold
+    {
+        get => _recoveryThreshold;
+        set
+        {
+            if (value <= 0)
+            {
+                throw new ArgumentException("RecoveryThreshold has to be set to a number greater than 0.");
+            }
+            _recoveryThreshold = value;
+        }
+    }
+
+    /// <summary>
+    /// A tz database string representing the timezone which the monitor's execution schedule is in (i.e. "America/Los_Angeles").
+    /// </summary>
+    public string? TimeZone { get; set; }
+
+    /// <summary>
+    /// An actor identifier string. This looks like 'user:john@example.com team:a-sentry-team'. IDs can also be used but will result in a poor DX.
+    /// </summary>
+    public string? Owner { get; set; }
+
+    internal SentryMonitorOptions() { }
+
+    // For integrations that configure the options before capturing the check-in
+    internal void CopyTo(SentryMonitorOptions target)
+    {
+        target._type = _type;
+        target._crontab = _crontab;
+        target._interval = _interval;
+        target._unit = _unit;
+        target.CheckInMargin = CheckInMargin;
+        target.MaxRuntime = MaxRuntime;
+        target._failureIssueThreshold = _failureIssueThreshold;
+        target._recoveryThreshold = _recoveryThreshold;
+        target.TimeZone = TimeZone;
+        target.Owner = Owner;
+    }
+
+    /// <inheritdoc />
+    public void WriteTo(Utf8JsonWriter writer, IDiagnosticLogger? logger)
+    {
+        Debug.Assert(_type != SentryMonitorScheduleType.None, "The Monitor Options do not contain a valid interval." +
+                                                              "Please update your monitor options by setting the Interval.");
+
+        writer.WriteStartObject("monitor_config");
+        writer.WriteStartObject("schedule");
+
+        writer.WriteString("type", TypeToString(_type));
+        switch (_type)
+        {
+            case SentryMonitorScheduleType.Crontab:
+                Debug.Assert(!string.IsNullOrEmpty(_crontab), "The provided 'crontab' cannot be an empty string.");
+                writer.WriteStringIfNotWhiteSpace("value", _crontab);
+                break;
+            case SentryMonitorScheduleType.Interval:
+                Debug.Assert(_interval != null, "The provided 'interval' cannot be null.");
+                writer.WriteNumberIfNotNull("value", _interval);
+                Debug.Assert(_unit != null, "The provided 'unit' cannot be null.");
+                writer.WriteStringIfNotWhiteSpace("unit", _unit.ToString()!.ToLower());
+                break;
+            default:
+                logger?.LogError("Invalid MonitorScheduleType: '{0}'", _type.ToString());
+                break;
+        }
+
+        writer.WriteEndObject();
+
+        writer.WriteNumberIfNotNull("checkin_margin", CheckInMargin?.TotalMinutes);
+        writer.WriteNumberIfNotNull("max_runtime", MaxRuntime?.TotalMinutes);
+        writer.WriteNumberIfNotNull("failure_issue_threshold", FailureIssueThreshold);
+        writer.WriteNumberIfNotNull("recovery_threshold", RecoveryThreshold);
+        writer.WriteStringIfNotWhiteSpace("timezone", TimeZone);
+        writer.WriteStringIfNotWhiteSpace("owner", Owner);
+
+        writer.WriteEndObject();
+    }
+
+    private static string TypeToString(SentryMonitorScheduleType type)
+    {
+        return type switch
+        {
+            SentryMonitorScheduleType.Crontab => "crontab",
+            SentryMonitorScheduleType.Interval => "interval",
+            _ => throw new ArgumentException($"Unsupported Monitor Schedule Type: '{type}'.")
+        };
+    }
+}

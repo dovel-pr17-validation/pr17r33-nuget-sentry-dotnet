@@ -1,0 +1,127 @@
+namespace Sentry;
+
+/// <summary>
+/// Contains representations of the subset of properties in <see cref="SentryOptions"/> that can be set from ConfigurationBindings.
+/// Note that all of these properties are nullable, so that if they are not present in configuration, the values from
+/// the type being bound to will be preserved.
+/// </summary>
+internal partial class BindableSentryOptions
+{
+    public bool? IsGlobalModeEnabled { get; set; }
+    public bool? EnableScopeSync { get; set; }
+    public bool? EnableBackpressureHandling { get; set; }
+    public List<string>? TagFilters { get; set; }
+    public List<string>? IgnoreTransactions { get; set; }
+    public bool? SendDefaultPii { get; set; }
+    public bool? IsEnvironmentUser { get; set; }
+    public string? ServerName { get; set; }
+    public bool? AttachStacktrace { get; set; }
+    public int? MaxBreadcrumbs { get; set; }
+    public float? SampleRate { get; set; }
+    public string? Release { get; set; }
+    public string? Distribution { get; set; }
+    public string? Environment { get; set; }
+    public string? Dsn { get; set; }
+    public bool? EnableLogs { get; set; }
+    public bool? EnableMetrics { get; set; }
+    public int? MaxQueueItems { get; set; }
+    public int? MaxCacheItems { get; set; }
+    public TimeSpan? ShutdownTimeout { get; set; }
+    public TimeSpan? FlushTimeout { get; set; }
+    public DecompressionMethods? DecompressionMethods { get; set; }
+    public CompressionLevel? RequestBodyCompressionLevel { get; set; }
+    public bool? RequestBodyCompressionBuffered { get; set; }
+    public bool? SendClientReports { get; set; }
+    public bool? Debug { get; set; }
+    public SentryLevel? DiagnosticLevel { get; set; }
+    public ReportAssembliesMode? ReportAssembliesMode { get; set; }
+    public DeduplicateMode? DeduplicateMode { get; set; }
+    public string? CacheDirectoryPath { get; set; }
+    public bool? CaptureFailedRequests { get; set; }
+    public List<string>? FailedRequestTargets { get; set; }
+    public List<int>? TraceIgnoreStatusCodes { get; set; }
+    public bool? DisableFileWrite { get; set; }
+    public TimeSpan? InitCacheFlushTimeout { get; set; }
+    public Dictionary<string, string>? DefaultTags { get; set; }
+    public double? TracesSampleRate { get; set; }
+    public List<string>? TracePropagationTargets { get; set; }
+    public bool? PropagateTraceparent { get; set; }
+    public bool? StrictTraceContinuation { get; set; }
+    public string? OrgId { get; set; }
+    public double? ProfilesSampleRate { get; set; }
+    public StackTraceMode? StackTraceMode { get; set; }
+    public long? MaxAttachmentSize { get; set; }
+    public StartupTimeDetectionMode? DetectStartupTime { get; set; }
+    public TimeSpan? AutoSessionTrackingInterval { get; set; }
+    public bool? AutoSessionTracking { get; set; }
+    public bool? UseAsyncFileIO { get; set; }
+    public bool? DisableSentryHttpMessageHandler { get; set; }
+    public bool? JsonPreserveReferences { get; set; }
+    public bool? EnableSpotlight { get; set; }
+    public string? SpotlightUrl { get; set; }
+
+    public void ApplyTo(SentryOptions options)
+    {
+        options.IsGlobalModeEnabled = IsGlobalModeEnabled ?? options.IsGlobalModeEnabled;
+        options.EnableScopeSync = EnableScopeSync ?? options.EnableScopeSync;
+        options.EnableBackpressureHandling = EnableBackpressureHandling ?? options.EnableBackpressureHandling;
+        options.TagFilters = TagFilters?.Select(s => new StringOrRegex(s)).ToList() ?? options.TagFilters;
+        options.IgnoreTransactions = IgnoreTransactions?.Select(s => new StringOrRegex(s)).ToList() ?? options.IgnoreTransactions;
+        options.SendDefaultPii = SendDefaultPii ?? options.SendDefaultPii;
+        options.IsEnvironmentUser = IsEnvironmentUser ?? options.IsEnvironmentUser;
+        options.ServerName = ServerName ?? options.ServerName;
+        options.AttachStacktrace = AttachStacktrace ?? options.AttachStacktrace;
+        options.MaxBreadcrumbs = MaxBreadcrumbs ?? options.MaxBreadcrumbs;
+        options.SampleRate = SampleRate ?? options.SampleRate;
+        options.Release = Release ?? options.Release;
+        options.Distribution = Distribution ?? options.Distribution;
+        options.Environment = Environment ?? options.Environment;
+        options.Dsn = Dsn ?? options.Dsn;
+        options.EnableLogs = EnableLogs ?? options.EnableLogs;
+#pragma warning disable CS0618 // Bound so existing configuration keys still resolve; the value is ignored.
+        options.EnableMetrics = EnableMetrics ?? options.EnableMetrics;
+#pragma warning restore CS0618
+        options.MaxQueueItems = MaxQueueItems ?? options.MaxQueueItems;
+        options.MaxCacheItems = MaxCacheItems ?? options.MaxCacheItems;
+        options.ShutdownTimeout = ShutdownTimeout ?? options.ShutdownTimeout;
+        options.FlushTimeout = FlushTimeout ?? options.FlushTimeout;
+        options.DecompressionMethods = DecompressionMethods ?? options.DecompressionMethods;
+        options.RequestBodyCompressionLevel = RequestBodyCompressionLevel ?? options.RequestBodyCompressionLevel;
+        options.RequestBodyCompressionBuffered = RequestBodyCompressionBuffered ?? options.RequestBodyCompressionBuffered;
+        options.SendClientReports = SendClientReports ?? options.SendClientReports;
+        options.Debug = Debug ?? options.Debug;
+        options.DiagnosticLevel = DiagnosticLevel ?? options.DiagnosticLevel;
+        options.ReportAssembliesMode = ReportAssembliesMode ?? options.ReportAssembliesMode;
+        options.DeduplicateMode = DeduplicateMode ?? options.DeduplicateMode;
+        options.CacheDirectoryPath = CacheDirectoryPath ?? options.CacheDirectoryPath;
+        options.CaptureFailedRequests = CaptureFailedRequests ?? options.CaptureFailedRequests;
+        options.FailedRequestTargets = FailedRequestTargets?.Select(s => new StringOrRegex(s)).ToList() ?? options.FailedRequestTargets;
+        options.TraceIgnoreStatusCodes = TraceIgnoreStatusCodes?.Select(code => new HttpStatusCodeRange(code)).ToList<HttpStatusCodeRange>() ?? options.TraceIgnoreStatusCodes;
+        options.DisableFileWrite = DisableFileWrite ?? options.DisableFileWrite;
+        options.InitCacheFlushTimeout = InitCacheFlushTimeout ?? options.InitCacheFlushTimeout;
+        options.DefaultTags = DefaultTags ?? options.DefaultTags;
+        options.TracesSampleRate = TracesSampleRate ?? options.TracesSampleRate;
+        options.ProfilesSampleRate = ProfilesSampleRate ?? options.ProfilesSampleRate;
+        options.TracePropagationTargets = TracePropagationTargets?.Select(s => new StringOrRegex(s)).ToList() ?? options.TracePropagationTargets;
+        options.PropagateTraceparent = PropagateTraceparent ?? options.PropagateTraceparent;
+        options.StrictTraceContinuation = StrictTraceContinuation ?? options.StrictTraceContinuation;
+        options.OrgId = OrgId ?? options.OrgId;
+        options.StackTraceMode = StackTraceMode ?? options.StackTraceMode;
+        options.MaxAttachmentSize = MaxAttachmentSize ?? options.MaxAttachmentSize;
+        options.DetectStartupTime = DetectStartupTime ?? options.DetectStartupTime;
+        options.AutoSessionTrackingInterval = AutoSessionTrackingInterval ?? options.AutoSessionTrackingInterval;
+        options.AutoSessionTracking = AutoSessionTracking ?? options.AutoSessionTracking;
+        options.UseAsyncFileIO = UseAsyncFileIO ?? options.UseAsyncFileIO;
+        options.DisableSentryHttpMessageHandler = DisableSentryHttpMessageHandler ?? options.DisableSentryHttpMessageHandler;
+        options.JsonPreserveReferences = JsonPreserveReferences ?? options.JsonPreserveReferences;
+        options.EnableSpotlight = EnableSpotlight ?? options.EnableSpotlight;
+        options.SpotlightUrl = SpotlightUrl ?? options.SpotlightUrl;
+
+#if ANDROID
+        Android.ApplyTo(options.Android);
+        Native.ApplyTo(options.Native);
+#elif __IOS__
+        Native.ApplyTo(options.Native);
+#endif
+    }
+}

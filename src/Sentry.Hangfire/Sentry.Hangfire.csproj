@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Official Hangfire integration for Sentry - Open-source error tracking that helps developers monitor and fix crashes in real time.</Description>
+    <PackageTags>$(PackageTags);Hangfire</PackageTags>
+    <TargetFrameworks>$(CurrentTfms);net462</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(EnableAot)' == 'true'">
+    <!-- Although Sentry.Hangfire is trim compatible, Hangfire.Core produces trim warnings so ultimately neither
+    Hangfire nor Sentry.Hangfire should be used in applications built using Trimming or AOT compilation -->
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sentry\Sentry.csproj" />
+    <PackageReference Include="Hangfire.Core" Version="1.8.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Sentry's internals aren't visible here because this assembly isn't strong-named -->
+    <Compile Include="..\Sentry\Internal\CrontabValidator.cs" Link="Internal\CrontabValidator.cs" />
+    <Compile Include="..\Sentry\Internal\MonitorSlug.cs" Link="Internal\MonitorSlug.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Sentry.Hangfire.Tests" PublicKey="$(SentryPublicKey)" />
+  </ItemGroup>
+
+</Project>

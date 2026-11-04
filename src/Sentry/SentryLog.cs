@@ -1,0 +1,241 @@
+using Sentry.Extensibility;
+using Sentry.Protocol;
+
+namespace Sentry;
+
+/// <summary>
+/// Represents a Sentry Structured Log.
+/// </summary>
+/// <remarks>
+/// Sentry Docs: <see href="https://docs.sentry.io/product/explore/logs/"/>.
+/// Sentry Developer Documentation: <see href="https://develop.sentry.dev/sdk/telemetry/logs/"/>.
+/// Sentry .NET SDK Docs: <see href="https://docs.sentry.io/platforms/dotnet/logs/"/>.
+/// </remarks>
+[DebuggerDisplay(@"SentryLog \{ Level = {Level}, Message = '{Message}' \}")]
+public sealed partial class SentryLog
+{
+    [SetsRequiredMembers]
+    internal SentryLog(DateTimeOffset timestamp, SentryId traceId, SentryLogLevel level, string message)
+    {
+        Timestamp = timestamp;
+        TraceId = traceId;
+        Level = level;
+        Message = message;
+        // 7 is the number of built-in attributes, so we start with that.
+        Attributes = new SentryAttributes(7);
+        // ensure the ImmutableArray`1 is not default, so we can omit IsDefault checks before accessing other members
+        Parameters = ImmutableArray<KeyValuePair<string, object>>.Empty;
+    }
+
+    internal static SentryLog Create(IHub hub, DateTimeOffset timestamp, SentryLogLevel level, string message, string? template, ImmutableArray<KeyValuePair<string, object>> parameters)
+    {
+        hub.GetTraceIdAndSpanId(out var traceId, out var spanId);
+
+        SentryLog log = new(timestamp, traceId, level, message)
+        {
+            Template = template,
+            Parameters = parameters,
+            SpanId = spanId,
+        };
+
+        return log;
+    }
+
+    /// <summary>
+    /// The timestamp of the log.
+    /// </summary>
+    /// <remarks>
+    /// Sent as seconds since the Unix epoch.
+    /// </remarks>
+    public required DateTimeOffset Timestamp { get; init; }
+
+    /// <summary>
+    /// The trace id of the log.
+    /// </summary>
+    public required SentryId TraceId { get; init; }
+
+    /// <summary>
+    /// The severity level of the log.
+    /// </summary>
+    public required SentryLogLevel Level { get; init; }
+
+    /// <summary>
+    /// The formatted log message.
+    /// </summary>
+    public required string Message { get; init; }
+
+    /// <summary>
+    /// The parameterized template string.
+    /// </summary>
+    public string? Template { get; init; }
+
+    /// <summary>
+    /// The parameters to the template string.
+    /// </summary>
+    public ImmutableArray<KeyValuePair<string, object>> Parameters
+    {
+        get;
+        init
+        {
+            Debug.Assert(!value.IsDefault); // DEBUG-only check, because .ctor is internal and set-accessor is init-only
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// The span id of the span that was active when the log was collected.
+    /// </summary>
+    public SpanId? SpanId { get; init; }
+
+    internal SentryAttributes Attributes { get; }
+
+    /// <summary>
+    /// Gets the attribute value associated with the specified key.
+    /// </summary>
+    /// <remarks>
+    /// Returns <see langword="true"/> if the <see cref="SentryLog"/> contains an attribute with the specified key and it's value is not <see langword="null"/>.
+    /// Otherwise <see langword="false"/>.
+    /// Supported types:
+    /// <list type="table">
+    ///   <listheader>
+    ///     <term>Type</term>
+    ///     <description>Range</description>
+    ///   </listheader>
+    ///   <item>
+    ///     <term>string</term>
+    ///     <description><see langword="string"/> and <see langword="char"/></description>
+    ///   </item>
+    ///   <item>
+    ///     <term>boolean</term>
+    ///     <description><see langword="false"/> and <see langword="true"/></description>
+    ///   </item>
+    ///   <item>
+    ///     <term>integer</term>
+    ///     <description>64-bit signed integral numeric types</description>
+    ///   </item>
+    ///   <item>
+    ///     <term>double</term>
+    ///     <description>64-bit floating-point numeric types</description>
+    ///   </item>
+    /// </list>
+    /// Unsupported types:
+    /// <list type="table">
+    ///   <listheader>
+    ///     <term>Type</term>
+    ///     <description>Result</description>
+    ///   </listheader>
+    ///   <item>
+    ///     <term><see langword="object"/></term>
+    ///     <description><c>ToString</c> as <c>"type": "string"</c></description>
+    ///   </item>
+    ///   <item>
+    ///     <term>Collections</term>
+    ///     <description><c>ToString</c> as <c>"type": "string"</c></description>
+    ///   </item>
+    ///   <item>
+    ///     <term><see langword="null"/></term>
+    ///     <description>ignored</description>
+    ///   </item>
+    /// </list>
+    /// </remarks>
+    /// <seealso href="https://develop.sentry.dev/sdk/telemetry/logs/"/>
+    public bool TryGetAttribute(string key, [NotNullWhen(true)] out object? value) =>
+        Attributes.TryGetAttribute(key, out value);
+
+    /// <summary>
+    /// Set a key-value pair of data attached to the log.
+    /// </summary>
+    public void SetAttribute(string key, object value) => Attributes.SetAttribute(key, value);
+
+    internal void SetDefaultAttributes(SentryOptions options, Scope? scope, SdkVersion? sdk = null)
+    {
+        // Core Attributes
+        sdk ??= scope?.Sdk ?? SdkVersion.Instance;
+        Attributes.SetDefaultAttributes(options, sdk);
+
+        // Server Attributes
+        if (!string.IsNullOrEmpty(options.ServerName))
+        {
+            SetAttribute("server.address", options.ServerName!);
+        }
+        else if (options.SendDefaultPii)
+        {
+            SetAttribute("server.address", Environment.MachineName);
+        }
+
+        // User Attributes
+        if (scope?.User is { } user)
+        {
+            if (user.Id is { } userId)
+            {
+                SetAttribute("user.id", userId);
+            }
+            if (user.Username is { } username)
+            {
+                SetAttribute("user.name", username);
+            }
+            if (user.Email is { } email)
+            {
+                SetAttribute("user.email", email);
+            }
+        }
+    }
+
+    internal void SetOrigin(string origin) => Attributes.SetAttribute("sentry.origin", origin);
+
+    internal void WriteTo(Utf8JsonWriter writer, IDiagnosticLogger? logger)
+    {
+        Debug.Assert(!Parameters.IsDefault);
+
+        writer.WriteStartObject();
+
+#if NET9_0_OR_GREATER
+        writer.WriteNumber("timestamp", Timestamp.ToUnixTimeMilliseconds() / (double)TimeSpan.MillisecondsPerSecond);
+#else
+        writer.WriteNumber("timestamp", Timestamp.ToUnixTimeMilliseconds() / 1_000.0);
+#endif
+
+        var (severityText, severityNumber) = Level.ToSeverityTextAndOptionalSeverityNumber(logger);
+        writer.WriteString("level", severityText);
+
+        writer.WriteString("body", Message);
+
+        writer.WritePropertyName("trace_id");
+        TraceId.WriteTo(writer, logger);
+
+        if (SpanId.HasValue)
+        {
+            writer.WritePropertyName("span_id");
+            SpanId.Value.WriteTo(writer, logger);
+        }
+
+        if (severityNumber.HasValue)
+        {
+            writer.WriteNumber("severity_number", severityNumber.Value);
+        }
+
+        writer.WritePropertyName("attributes");
+        writer.WriteStartObject();
+
+        // the SDK MUST NOT attach a sentry.message.template attribute if there are no parameters
+        // https://develop.sentry.dev/sdk/telemetry/logs/#default-attributes
+        if (Template is not null && !Parameters.IsEmpty)
+        {
+            SentryAttributeSerializer.WriteStringAttribute(writer, "sentry.message.template", Template);
+        }
+
+        foreach (var parameter in Parameters)
+        {
+            SentryAttributeSerializer.WriteAttribute(writer, $"sentry.message.parameter.{parameter.Key}", parameter.Value, logger);
+        }
+
+        foreach (var attribute in Attributes)
+        {
+            SentryAttributeSerializer.WriteAttribute(writer, attribute.Key, attribute.Value, logger);
+        }
+
+        writer.WriteEndObject(); // attributes
+
+        writer.WriteEndObject();
+    }
+}

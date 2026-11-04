@@ -1,0 +1,14 @@
+<Project>
+  <!--Note: we're importing root build props, not from the parent dir, to avoid build issues, e.g. testrunner.exe not being runnable on Android -->
+  <Import Project="..\..\Directory.Build.props" />
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <MtouchUseLlvm Condition="'$(Configuration)' == 'Release'">false</MtouchUseLlvm>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Sentry"/>
+    <Using Include="Sentry.Extensibility"/>
+  </ItemGroup>
+</Project>

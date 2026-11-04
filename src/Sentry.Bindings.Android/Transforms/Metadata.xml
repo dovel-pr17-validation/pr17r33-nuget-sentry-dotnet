@@ -1,0 +1,195 @@
+﻿<metadata>
+
+  <!--
+    Reference: https://docs.microsoft.com/xamarin/android/platform/binding-java-library/customizing-bindings/java-bindings-metadata
+
+    Source API (before transformation):
+      src/Sentry/obj/Debug/net6.0-android/api.xml
+    Output API (after transformation):
+      src/Sentry/obj/Debug/net6.0-android/api.xml.fixed
+  -->
+
+  <!-- Make all public types, internal -->
+  <attr path="/api/package/class[@visibility='public']" name="visibility">internal</attr>
+  <attr path="/api/package/interface[@visibility='public']" name="visibility">internal</attr>
+
+  <!-- Fix nullability of enum field values -->
+  <attr path="/api/package/class[@extends='java.lang.Enum']/field" name="not-null">true</attr>
+
+  <!-- Assign .NET namespaces for all Java packages imported -->
+  <attr path="/api/package[@name='io.sentry']" name="managedName">Sentry.JavaSdk</attr>
+  <attr path="/api/package[@name='io.sentry.android.core']" name="managedName">Sentry.JavaSdk.Android.Core</attr>
+  <attr path="/api/package[@name='io.sentry.android.core.internal.gestures']" name="managedName">Sentry.JavaSdk.Android.Core.Internal.Gestures</attr>
+  <attr path="/api/package[@name='io.sentry.android.core.internal.modules']" name="managedName">Sentry.JavaSdk.Android.Core.Internal.Modules</attr>
+  <attr path="/api/package[@name='io.sentry.android.core.internal.threaddump']" name="managedName">Sentry.JavaSdk.Android.Core.Internal.ThreadDump</attr>
+  <attr path="/api/package[@name='io.sentry.android.core.internal.util']" name="managedName">Sentry.JavaSdk.Android.Core.Internal.Util</attr>
+  <attr path="/api/package[@name='io.sentry.android.ndk']" name="managedName">Sentry.JavaSdk.Android.Ndk</attr>
+  <attr path="/api/package[@name='io.sentry.android.replay']" name="managedName">Sentry.JavaSdk.Android.Replay</attr>
+  <attr path="/api/package[@name='io.sentry.android.supplemental']" name="managedName">Sentry.JavaSdk.Android.Supplemental</attr>
+  <attr path="/api/package[@name='io.sentry.cache']" name="managedName">Sentry.JavaSdk.Cache</attr>
+  <!-- Renaming 'clientreport' to 'clientreports' (plural) as a workaround for typename matching namespace: io.sentry.clientreport.clientreport -->
+  <attr path="/api/package[@name='io.sentry.clientreport']" name="managedName">Sentry.JavaSdk.ClientReports</attr>
+  <attr path="/api/package[@name='io.sentry.config']" name="managedName">Sentry.JavaSdk.Config</attr>
+  <attr path="/api/package[@name='io.sentry.exception']" name="managedName">Sentry.JavaSdk.Exception</attr>
+  <attr path="/api/package[@name='io.sentry.hints']" name="managedName">Sentry.JavaSdk.Hints</attr>
+  <attr path="/api/package[@name='io.sentry.instrumentation.file']" name="managedName">Sentry.JavaSdk.Instrumentation.File</attr>
+  <attr path="/api/package[@name='io.sentry.internal.gestures']" name="managedName">Sentry.JavaSdk.Internal.Gestures</attr>
+  <attr path="/api/package[@name='io.sentry.internal.modules']" name="managedName">Sentry.JavaSdk.Internal.Modules</attr>
+  <attr path="/api/package[@name='io.sentry.transport']" name="managedName">Sentry.JavaSdk.Transport</attr>
+  <attr path="/api/package[@name='io.sentry.profilemeasurements']" name="managedName">Sentry.JavaSdk.ProfileMeasurements</attr>
+  <attr path="/api/package[@name='io.sentry.protocol']" name="managedName">Sentry.JavaSdk.Protocol</attr>
+  <attr path="/api/package[@name='io.sentry.util']" name="managedName">Sentry.JavaSdk.Util</attr>
+  <attr path="/api/package[@name='io.sentry.util.thread']" name="managedName">Sentry.JavaSdk.Util.Thread</attr>
+  <attr path="/api/package[@name='io.sentry.vendor']" name="managedName">Sentry.JavaSdk.Vendor</attr>
+  <attr path="/api/package[@name='io.sentry.vendor.gson.internal.bind.util']" name="managedName">Sentry.JavaSdk.Vendor.Gson.Internal.Bind.Util</attr>
+  <attr path="/api/package[@name='io.sentry.vendor.gson.stream']" name="managedName">Sentry.JavaSdk.Vendor.Gson.Stream</attr>
+
+  <!--
+    These properties have conflicts that create BG8401 warnings ("Skipping '...' due to a duplicate field or property name.")
+    This happens where there is a both a method such as "public getFoo" and related field "protected foo" on the same class.
+    We assign a different name to the field to remove the conflict.
+  -->
+  <attr path="/api/package[@name='io.sentry']/class[@name='SentryBaseEvent']/field[@name='throwable']" name="managedName">ThrowableValue</attr>
+  <attr path="/api/package[@name='io.sentry']/class[@name='SpanContext']/field[@name='description']" name="managedName">DescriptionValue</attr>
+  <attr path="/api/package[@name='io.sentry']/class[@name='SpanContext']/field[@name='origin']" name="managedName">OriginValue</attr>
+  <attr path="/api/package[@name='io.sentry']/class[@name='SpanContext']/field[@name='status']" name="managedName">StatusValue</attr>
+  <attr path="/api/package[@name='io.sentry']/class[@name='SpanContext']/field[@name='tags']" name="managedName">TagsValue</attr>
+
+  <!-- These constants need a different name than their class to avoid CS0542 compilation errors. -->
+  <attr path="/api/package[@name='io.sentry']/class[@name='SentryTraceHeader']/field[@name='SENTRY_TRACE_HEADER']" name="managedName">SentryTraceHeaderName</attr>
+  <attr path="/api/package[@name='io.sentry']/class[@name='BaggageHeader']/field[@name='BAGGAGE_HEADER']" name="managedName">BaggageHeaderName</attr>
+
+  <!-- Fix visibility of some specific types as necessary. -->
+  <attr path="/api/package[@name='io.sentry.android.core']/class[@name='DefaultAndroidEventProcessor']" name="visibility">internal</attr>
+  <attr path="/api/package[@name='io.sentry.android.core']/class[@name='EmptySecureContentProvider']" name="visibility">internal</attr>
+  <attr path="/api/package[@name='io.sentry']/interface[@name='ObjectReader']/method[@name='dateOrNull']" name="visibility">internal</attr>
+
+
+  <!-- Fix missing compareTo(Object) methods on classes extending SentryDate. -->
+  <add-node path="/api/package[@name='io.sentry']/class[@extends='io.sentry.SentryDate']">
+    <method name="compareTo" return="int" abstract="false" native="false" synchronized="false" static="false" final="false" deprecated="not deprecated" visibility="public">
+        <parameter name="p0" type="java.lang.Object" />
+    </method>
+  </add-node>
+
+  <!-- Fix missing compareTo(Object) method for EventProcessorAndOrder-->
+  <add-node path="/api/package[@name='io.sentry.internal.eventprocessor']/class[@name='EventProcessorAndOrder']">
+    <method name="compareTo" return="int" abstract="false" native="false" synchronized="false" static="false" final="false" deprecated="not deprecated" visibility="public">
+        <parameter name="p0" type="java.lang.Object" />
+    </method>
+  </add-node>
+
+  <!-- Fix missing compareTo(Object) method for Breadcrumb -->
+  <add-node path="/api/package[@name='io.sentry']/class[@name='Breadcrumb']">
+    <method name="compareTo" return="int" abstract="false" native="false" synchronized="false" static="false" final="false" deprecated="not deprecated" visibility="public">
+        <parameter name="p0" type="java.lang.Object" />
+    </method>
+  </add-node>
+
+  <!-- Fix missing compareTo(Object) method for AnrStackTrace -->
+  <add-node path="/api/package[@name='io.sentry.android.core.anr']/class[@name='AnrStackTrace']">
+    <method name="compareTo" return="int" abstract="false" native="false" synchronized="false" static="false" final="false" deprecated="not deprecated" visibility="public">
+        <parameter name="p0" type="java.lang.Object" />
+    </method>
+  </add-node>
+
+  <!--
+    ISpan.startChild(String, String, SentryDate) became a Java default method in 8.53.0 (it used to be an
+    abstract method on ITransaction). The generator surfaces inherited default methods on derived interfaces
+    as explicit interface implementations, and emits the qualifier without a `global::` prefix:
+      global::Sentry.JavaSdk.ISpan? Sentry.JavaSdk.ISpan.StartChild (...)
+    Inside the Sentry.JavaSdk namespace, `Sentry` binds to the io.sentry.Sentry class rather than the
+    namespace, so ITransaction fails to compile with CS0426/CS0538. We don't bind to any startChild
+    overload, so drop the default method.
+  -->
+  <remove-node path="/api/package[@name='io.sentry']/interface[@name='ISpan']/method[@name='startChild' and count(parameter)=3 and parameter[3][@type='io.sentry.SentryDate']]" />
+
+  <!-- Same issue (CS0538) for the empty marker interface SentryEventProcessor, which inherits EventProcessor's default methods. -->
+  <remove-node path="/api/package[@name='io.sentry.internal.eventprocessor']/interface[@name='SentryEventProcessor']" />
+
+  <!-- Remove problematic deprecated methods in the IScopes interface -->
+  <remove-node path="/api/package[@name='io.sentry']/interface[@name='IScopes']/method[@deprecated]" />
+
+  <!--
+    TODO: If we need this, figure out how to multi-target or late bind.
+    This API uses FrameMetrics, which requires Android >= 24.0.  We currently target Android >= 21.0 which is the minimum supported by MAUI.
+    AndroidProfiler is dependant on SentryFrameMetricsCollector
+  -->
+  <remove-node path="/api/package[@name='io.sentry.android.core.internal.util']/*[starts-with(@name,'SentryFrameMetricsCollector')]" />
+  <remove-node path="/api/package[@name='io.sentry.android.core']/class[@name='AndroidProfiler']/*" />
+
+  <!-- Remove problematic classes for profiling that create a stack overflow during code generation, which appears as:
+      error MSB6006: "dotnet" exited with code 134
+  -->
+  <remove-node path="/api/package[@name='io.sentry']/class[@name='ProfileChunk']" />
+  <remove-node path="/api/package[@name='io.sentry']/class[@name='ProfilingTraceData']" />
+  <remove-node path="/api/package[@name='io.sentry.android.core']/class[@name='AndroidProfiler']" />
+
+  <!--
+    The BackfillingEventProcessor interface creates a stack overflow during code generation, which appears as:
+      error MSB6006: "dotnet" exited with code 134
+    We currently don't need to use this via C# bindings.
+  -->
+  <remove-node path="/api/package[@name='io.sentry']/interface[@name='BackfillingEventProcessor']" />
+
+  <!--
+    SentryEvent.serialize() expects an parameter which implements IObjectWriter.
+    JsonObjectWriter implements IObjectWriter in Java, but somehow this is not reflected in the generated binding.
+    Here we force using JsonObjectWriter as otherwise we'd get the following error message:
+      Argument 1: cannot convert from 'Sentry.JavaSdk.JsonObjectWriter' to 'Sentry.JavaSdk.IObjectWriter'
+  -->
+  <attr path="/api/package[@name='io.sentry']/class[@name='SentryEvent']/method[@name='serialize']/parameter[@name='writer']"
+    name="managedType">Sentry.JavaSdk.JsonObjectWriter</attr>
+
+  <!--
+    SentryEvent.Deserializer.deserialize() expects an parameter which implements IObjectReader.
+    JsonObjectReader implements IObjectWriter in Java, but somehow this is not reflected in the generated binding.
+    Here we force using JsonObjectReader as otherwise we'd get the following error message:
+      Argument 1: cannot convert from 'Sentry.JavaSdk.JsonObjectReader' to 'Sentry.JavaSdk.IObjectReader'
+  -->
+  <attr path="/api/package[@name='io.sentry']/class[@name='SentryEvent.Deserializer']/method[@name='deserialize']/parameter[@name='reader']"
+    name="managedType">Sentry.JavaSdk.JsonObjectReader</attr>
+
+  <!--
+    The remaining APIS are removed to prevent various errors/warnings.
+    TODO: Find other workarounds for each one, rather than removing the APIs.
+  -->
+
+  <remove-node path="/api/package[@name='io.sentry']/class[@name='EnvelopeSender']" />
+  <remove-node path="/api/package[@name='io.sentry']/class[@name='OutboxSender']" />
+  <remove-node path="/api/package[@name='io.sentry.cache']/class[@name='EnvelopeCache']" />
+  <remove-node path="/api/package[@name='io.sentry.android.core.cache']/class[@name='AndroidEnvelopeCache']" />
+  <remove-node path="/api/package[@name='io.sentry.android.core.internal.gestures']" />
+  <remove-node path="/api/package[@name='io.sentry.android.core.performance']" />
+  <!-- Remove the deprecated SentryUserFeedbackDialog (and its nested types). Replaced by SentryUserFeedbackForm in Java SDK 8.41+.
+       The nested IOptionsConfiguration / IOptionsConfigurationInvoker collide with the same-named types on SentryUserFeedbackForm (CS0108). -->
+  <remove-node path="/api/package[@name='io.sentry.android.core']/class[starts-with(@name,'SentryUserFeedbackDialog')]" />
+
+  <!-- SentryUserFeedbackForm extends AlertDialog and declares a nested Builder that extends AlertDialog.Builder.
+       Rename the nested type so its C# name no longer collides with the inherited AlertDialog.Builder (CS0108). -->
+  <attr path="/api/package[@name='io.sentry.android.core']/class[@name='SentryUserFeedbackForm.Builder']" name="managedName">SentryUserFeedbackFormBuilder</attr>
+
+  <remove-node path="/api/package[starts-with(@name,'io.sentry')]/*/method[@name='clone' and count(parameter)=0]" />
+  <remove-node path="/api/package[starts-with(@name,'io.sentry')]/class/implements[@name='io.sentry.JsonDeserializer']" />
+  <remove-node path="/api/package[@name='io.sentry.vendor.gson.stream']/class[@name='JsonToken']/field[@name='NAME']" />
+
+  <remove-node path="/api/package[@name='io.sentry.exception']/class[@name='ExceptionMechanismException']" />
+  <remove-node path="/api/package[@name='io.sentry.exception']/class[@name='InvalidSentryTraceHeaderException']" />
+  <remove-node path="/api/package[@name='io.sentry.exception']/class[@name='SentryEnvelopeException']" />
+  <remove-node path="/api/package[@name='io.sentry.exception']/class[@name='SentryHttpClientException']" />
+  <remove-node path="/api/package[@name='io.sentry.vendor.gson.stream']/class[@name='MalformedJsonException']" />
+
+  <!-- Remove CombinedContextsView.PutAll method due to conflicts when attempting to overwrite a method with the same name. -->
+  <remove-node path="/api/package[@name='io.sentry']/class[@name='CombinedContextsView']/method[@name='putAll']" />
+  <!-- Remove ISentryLifecycleToken.Close method due to conflicts with IAutoCloseable.Close due to having the same name. -->
+  <remove-node path="/api/package[@name='io.sentry']/interface[@name='ISentryLifecycleToken']/method[@name='close']" />
+  <!-- Remove QueueFile. The `.iterator` method has nullability issues -->
+  <remove-node path="/api/package[@name='io.sentry.cache.tape']/class[@name='QueueFile']" />
+
+  <!-- Remove UpdateStatus to avoid CS0108 for conflicting _members fields in nested subclasses -->
+  <remove-node path="/api/package[@name='io.sentry']/class[@name='UpdateStatus']" />
+
+  <!-- Remove SentryShakeDetector to avoid CS8767 nullability mismatch with ISensorEventListener -->
+  <remove-node path="/api/package[@name='io.sentry.android.core']/class[@name='SentryShakeDetector']" />
+
+</metadata>

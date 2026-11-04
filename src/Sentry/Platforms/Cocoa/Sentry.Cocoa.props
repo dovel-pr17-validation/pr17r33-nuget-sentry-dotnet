@@ -1,0 +1,14 @@
+<Project>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sentry.Bindings.Cocoa\Sentry.Bindings.Cocoa.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Foundation" />
+    <Using Include="Sentry.CocoaSdk.SentryObjCOptions" Alias="SentryCocoaSdkOptions" />
+    <Using Include="Sentry.CocoaSdk.SentryObjCSDK" Alias="SentryCocoaSdk" />
+    <Using Include="Sentry.CocoaSdk.SentryObjCSDK" Alias="SentryCocoaHybridSdk" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,17 @@
+name: Danger
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+
+jobs:
+  danger:
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: getsentry/github-workflows/danger@959162c159b866489d3fabe93327f48f9b8cb7ee # 3.4.1

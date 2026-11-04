@@ -1,0 +1,44 @@
+using Sentry.Extensibility;
+using Sentry.Internal;
+
+namespace Sentry.Maui.Internal;
+
+internal class SentryMauiScreenshotProcessor : ISentryEventProcessorWithHint, ISdkProcessor
+{
+    private readonly SentryMauiOptions _options;
+
+    public SentryMauiScreenshotProcessor(SentryMauiOptions options)
+    {
+        _options = options;
+    }
+
+    public SentryEvent? Process(SentryEvent @event)
+    {
+        return @event;
+    }
+
+    public SentryEvent? Process(SentryEvent @event, SentryHint hint)
+    {
+        if (_options.BeforeScreenshotCaptureInternal is { } beforeCapture)
+        {
+            bool shouldCapture;
+            try
+            {
+                shouldCapture = beforeCapture.Invoke(@event, hint);
+            }
+            catch (Exception e)
+            {
+                _options.LogError(e, "BeforeScreenshotCapture callback failed.");
+                return @event;
+            }
+
+            if (!shouldCapture)
+            {
+                return @event;
+            }
+        }
+
+        hint.Attachments.Add(new ScreenshotAttachment(_options));
+        return @event;
+    }
+}

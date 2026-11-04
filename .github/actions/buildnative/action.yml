@@ -1,0 +1,54 @@
+name: Build Native Dependencies
+description: Builds C and Kotlin sample crash functions and Sentry Android SDK
+runs:
+  using: composite
+
+  steps:
+
+    - name: Set Environment Variables
+      shell: bash
+      run: |
+        # actions/setup-java v6 exports the ARM64 path as JAVA_HOME_<version>_AARCH64;
+        # v5 and earlier used JAVA_HOME_<version>_ARM64. Accept either.
+        if [[ "$RUNNER_ARCH" == "ARM64" ]]; then
+          echo "JAVA_HOME_21=${JAVA_HOME_21_AARCH64:-$JAVA_HOME_21_ARM64}" >> $GITHUB_ENV
+        else
+          echo "JAVA_HOME_21=$JAVA_HOME_21_X64" >> $GITHUB_ENV
+        fi
+
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      id: cache-c
+      with:
+        path: lib/sentrysupplemental/bin
+        key: supplemental-c-${{ runner.os }}-${{ hashFiles('lib/sentrysupplemental/*.*') }}
+
+    - name: Install Ninja
+      if: ${{ steps.cache-c.outputs.cache-hit != 'true' }}
+      shell: bash
+      run: ${{ runner.os == 'macOS' && 'brew install ninja' || runner.os == 'Windows' && 'choco install ninja' || 'sudo apt-get update && sudo apt-get install ninja-build' }}
+
+    - name: Build C Project
+      if: ${{ steps.cache-c.outputs.cache-hit != 'true' && (runner.os == 'Linux' || runner.os == 'macOS') }}
+      shell: bash
+      run: lib/sentrysupplemental/build.sh
+
+    - name: Build C Project
+      if: ${{ steps.cache-c.outputs.cache-hit != 'true' && runner.os == 'Windows' }}
+      shell: cmd
+      run: lib\sentrysupplemental\build.cmd
+
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      id: cache-android
+      with:
+        path: lib/sentry-android-supplemental/bin
+        key: supplemental-android-${{ runner.os }}-${{ hashFiles('lib/sentry-android-supplemental/*.*') }}
+
+    - name: Build Java Project
+      if: ${{ steps.cache-android.outputs.cache-hit != 'true' && runner.os == 'Linux' || runner.os == 'macOS' }}
+      shell: bash
+      run: lib/sentry-android-supplemental/build.sh
+
+    - name: Build Java Project
+      if: ${{ steps.cache-android.outputs.cache-hit != 'true' && runner.os == 'Windows' }}
+      shell: cmd
+      run: lib\sentry-android-supplemental\build.cmd
